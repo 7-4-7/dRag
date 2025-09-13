@@ -6,3 +6,4 @@ itsdangerous
 httpx
 logging
 tqdm
+serapi

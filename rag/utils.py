@@ -1,3 +1,9 @@
+from dotenv import load_dotenv
+import os
+import serpapi
+
+load_dotenv()
+
 def load_model(model_name):
     model = "all_lama_mini_v6"
     return model
@@ -41,5 +47,28 @@ Strictly respond in JSON format like this:
         "generate_answer": PROMPT_2
     }
 
+def load_generating_model():
+    # Gemini login and all
+    return gemini_model
+
 def perform_search(query):
-    pass
+    SERP_API_KEY = os.getenv('SERP_API_KEY')
+    client = serpapi.Client(api_key=SERP_API_KEY)
+    result = client.search(
+        q = query,
+        engine = "google",
+        location = "India",
+        hl = 'en',
+        gl = "us",
+    )
+    snippets = []
+    for r in result.get("organic_results", [])[:num_results]:
+        snippet_text = r.get("snippet")
+        link = r.get("link")
+        if snippet_text and link:
+            snippets.append({
+                "content": snippet_text,
+                "link": link
+            })
+
+    return snippets

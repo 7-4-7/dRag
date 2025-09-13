@@ -1,12 +1,12 @@
 from pathlib import Path
 from tqdm import tqdm
-from utils import load_prompts, load_model
+from utils import load_prompts, load_model, perform_search, load_generating_model
 
 class RAGPipeline():
     def __init__(self, emb_model_name ,web_search : bool = True):
         self.web_search = web_search
         self.model = load_model()
-        pass
+        
     def load_documents(self, kb_dir):
         """Supports pdf, docx, slides with metadata attached for back referal"""
         combined_document = []
@@ -35,6 +35,7 @@ class RAGPipeline():
         """Retrieves top_k similar vector embedding's meta data to form context""" 
         context = ""
         return context
+    
     def web_search_needed(self, query, context):
         """Performs web search and retrieves additional result if necessary"""
         prompts = load_prompts()
@@ -49,7 +50,7 @@ class RAGPipeline():
                 break
 
             search_phrase = model_response['search_query']
-            new_context = perform_web_search(search_phrase)
+            new_context = perform_search(search_phrase)
             search_context += "\n" + new_context
 
             attempts += 1
@@ -57,7 +58,14 @@ class RAGPipeline():
                 break
 
         return search_context
-            
+    
+    def generate_answer(self, query):
+        generating_model = load_generating_model()
+        prompts = load_prompts()['generate_answer']
+        model_response_json = generating_model.generate(prompts)
+        return model_response_json
+        
+        
         
 
     
