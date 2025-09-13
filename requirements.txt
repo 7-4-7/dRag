@@ -5,3 +5,4 @@ authlib
 itsdangerous
 httpx
 logging
+tqdm
