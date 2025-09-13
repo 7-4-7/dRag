@@ -7,3 +7,13 @@ httpx
 logging
 tqdm
 serapi
+python-pptx
+python-docx
+pdfplumber
+sentence-transformers
+uuid
+pinecone
+grpcio
+grpcio-tools
+protobuf
+googleapis-common-protos
