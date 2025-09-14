@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 from tqdm import tqdm
 from uuid import uuid4
 from backend.rag.utils import (
@@ -12,10 +13,12 @@ from backend.rag.utils import (
     load_pinecone,
 )
 from backend.config import PINECONE_INDEX_NAME
+import json
 class RAGPipeline():
     def __init__(self, web_search : bool = True):
         self.web_search = web_search
         self.emb_model = load_embedding_model()
+        self.generating_model = load_generating_model()
         self.pc, self.idx = load_pinecone()
         
     def load_documents(self, kb_dir:Path):
@@ -72,9 +75,9 @@ class RAGPipeline():
             })
         return embeds
     
-    def store_embeds(self,):
+    def store_embeds(self, embed_chunks):
         """Stores the generated embeddings in pinecone db"""
-        for embed_chunk in embed_chunk:
+        for embed_chunk in embed_chunks:
             vectors = [
                 {
                     "id" : embed_chunk['id'],
@@ -91,16 +94,22 @@ class RAGPipeline():
         return q_emb
     
     def lookup_and_retrieval(self, q_emb, top_k):
-        """Retrieves top_k similar vector embedding's meta data to form context""" 
+        """Retrieves top_k similar vector embedding's text + file name to form context"""
         response = self.idx.query(
-            vector = q_emb,
-            top_k = top_k,            
-            includeValues = False,
-            includeMetadata = True,
+            vector=q_emb,
+            top_k=top_k,
+            includeValues=False,
+            includeMetadata=True
         )
+        
         context = ""
+        for match in response['matches']:
+            file_name = match['metadata']['file_name']
+            text = match['metadata']['text']
+            context += f"[Source: {file_name}] {text}\n"
+            
         return context
-    
+
     def web_search_needed(self, query, context):
         """Performs web search and retrieves additional result if necessary"""
         prompts = load_prompts()
@@ -110,42 +119,89 @@ class RAGPipeline():
 
         while True:
             prompt = prompts['validate_context'].format(query=query, context=search_context)
-            model_response = self.model(prompt)  
-            if not model_response['search_mode']:
+            model_response = self.generating_model.generate_content(prompt) 
+            raw = model_response.text
+            cleaned = re.sub(r"```(?:json)?", "", raw).strip() 
+            parsed = json.loads(cleaned)
+            if not parsed['search_mode']:
+                print('🔴 Ending search mode')
                 break
 
-            search_phrase = model_response['search_query']
+            search_phrase = parsed['search_query']
+            print(f'🔵 Searching for {search_phrase}')
             new_context = perform_search(search_phrase)
-            search_context += "\n" + new_context
+            for snip in new_context:
+                snippet_text = snip["content"]
+                source_link = snip["link"]
+                search_context += f"\n[Web: {source_link}] {snippet_text}"
 
             attempts += 1
             if attempts >= max_attempts:
+                print('🔴 Ending search mode')
                 break
 
         return search_context
     
-    def generate_answer(self, query):
-        generating_model = load_generating_model()
-        prompts = load_prompts()['generate_answer']
-        model_response_json = generating_model.generate(prompts)
-        return model_response_json
+    def generate_answer(self, query, context):
+        prompts = load_prompts()["generate_answer"].format(query=query, context=context)
+        model_response = self.generating_model.generate_content(prompts)
+
+        raw_text = model_response.candidates[0].content.parts[0].text
+
+        cleaned = re.sub(r"^```json|```$", "", raw_text, flags=re.MULTILINE).strip()
+
+        try:
+            parsed = json.loads(cleaned)
+        except json.JSONDecodeError:
+            parsed = {"answer": cleaned, "references": []}
+
+        return parsed
+
         
-        
-rgp = RAGPipeline(web_search=False)
+rgp = RAGPipeline(web_search=True)
 
 # Stage 1
+print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
 kb_dir = Path("backend\\rag\\kb")
 all_content = rgp.load_documents(kb_dir)
-print(all_content)
+# print(len(all_content))
 
 # Stage 2
+print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
 chunks = rgp.chunk_text(all_content=all_content, chunk_size=500, chunk_overlap=50)
-print(len(chunks))
+# print(len(chunks))
 
 # Stage 3 
+print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
 emb_chunks = rgp.embed_chunks(chunks=chunks)
-print(len(emb_chunks))
+# print(len(emb_chunks))
 
+# Stage 4
+print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+rgp.store_embeds(embed_chunks=emb_chunks)
+
+# Stage 5 
+print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+query = "What is the difference between pshycolgy and technology"
+q_emb = rgp.query_embed(query=query)
+# print(q_emb.shape)
+
+# Stage 6
+print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+response = rgp.lookup_and_retrieval(q_emb=q_emb.tolist(), top_k=3)
+# print(response)
+
+# Stage 7
+print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+more_context = rgp.web_search_needed(query=query, context=response)
+# print(more_context)
+
+
+# Stage 8
+print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+generate_ans = rgp.generate_answer(query=query, context=more_context)
+print(generate_ans['answer'])
+print(generate_ans['references'])
 
 
     

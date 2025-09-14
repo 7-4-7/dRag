@@ -1,8 +1,7 @@
-import os
 from fastapi import FastAPI, Request, Depends, HTTPException
 from starlette.middleware.sessions import SessionMiddleware
-from routes import auth
-from config import SECRET_KEY
+from backend.routes import auth
+from backend.config import SECRET_KEY
 
 app = FastAPI()
 

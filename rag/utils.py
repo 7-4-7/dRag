@@ -6,6 +6,7 @@ from docx import Document
 from pathlib import Path
 from pptx import Presentation
 import pdfplumber
+import google.generativeai as genai
 from sentence_transformers import SentenceTransformer
 from backend.config import (
     GENERATING_MODEL_NAME,
@@ -13,7 +14,6 @@ from backend.config import (
     PINECONE_HOST_URL,
 )
 from pinecone import Pinecone, ServerlessSpec
-
 
 load_dotenv()
 
@@ -92,7 +92,9 @@ def load_pinecone():
     
 def load_generating_model():
     """Generating model instatination"""
-    model = None
+    genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
+    model = genai.GenerativeModel('gemini-2.0-flash')
+    return model
 
 def load_prompts():
     PROMPT_1 = """
@@ -106,11 +108,11 @@ If insufficient, set "search_mode": true and suggest the missing information in 
 Provide a concise reason in "detail".
 
 Strictly respond in JSON format like this:
-{
+{{
   "search_mode": true or false,
   "detail": "Concise explanation of missing context or why context is enough.",
   "search_query": "Short phrase (5-6 words) to retrieve missing context if needed."
-}
+}}
 """
 
     PROMPT_2 = """
@@ -122,10 +124,10 @@ Using the provided context, generate a clear, accurate, and concise answer.
 Include the sources from the context that you used. 
 
 Strictly respond in JSON format like this:
-{
+{{
   "answer": "Your answer here.",
   "references": ["Reference 1 from context", "Reference 2 from context"]
-}
+}}
 """
 
     return {
@@ -144,7 +146,7 @@ def perform_search(query):
         gl = "us",
     )
     snippets = []
-    for r in result.get("organic_results", [])[:num_results]:
+    for r in result.get("organic_results", [])[:5]:
         snippet_text = r.get("snippet")
         link = r.get("link")
         if snippet_text and link:

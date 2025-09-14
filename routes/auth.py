@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request, HTTPException
 from starlette.responses import RedirectResponse
 from authlib.integrations.starlette_client import OAuth
 from authlib.common.errors import AuthlibBaseError
-from config import CLIENT_ID, CLIENT_SECRET, SECRET_KEY
+from backend.config import CLIENT_ID, CLIENT_SECRET, SECRET_KEY
 import logging
 
 logging.basicConfig(level=logging.INFO)

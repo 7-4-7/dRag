@@ -17,3 +17,4 @@ grpcio
 grpcio-tools
 protobuf
 googleapis-common-protos
+google-generativeai
