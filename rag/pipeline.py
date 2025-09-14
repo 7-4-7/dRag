@@ -158,50 +158,50 @@ class RAGPipeline():
         return parsed
 
         
-rgp = RAGPipeline(web_search=True)
+# rgp = RAGPipeline(web_search=True)
 
-# Stage 1
-print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-kb_dir = Path("backend\\rag\\kb")
-all_content = rgp.load_documents(kb_dir)
-# print(len(all_content))
+# # Stage 1
+# print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+# kb_dir = Path("backend\\rag\\kb")
+# all_content = rgp.load_documents(kb_dir)
+# # print(len(all_content))
 
-# Stage 2
-print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-chunks = rgp.chunk_text(all_content=all_content, chunk_size=500, chunk_overlap=50)
-# print(len(chunks))
+# # Stage 2
+# print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+# chunks = rgp.chunk_text(all_content=all_content, chunk_size=500, chunk_overlap=50)
+# # print(len(chunks))
 
-# Stage 3 
-print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-emb_chunks = rgp.embed_chunks(chunks=chunks)
-# print(len(emb_chunks))
+# # Stage 3 
+# print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+# emb_chunks = rgp.embed_chunks(chunks=chunks)
+# # print(len(emb_chunks))
 
-# Stage 4
-print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-rgp.store_embeds(embed_chunks=emb_chunks)
+# # Stage 4
+# print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+# rgp.store_embeds(embed_chunks=emb_chunks)
 
-# Stage 5 
-print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-query = "What is the difference between pshycolgy and technology"
-q_emb = rgp.query_embed(query=query)
-# print(q_emb.shape)
+# # Stage 5 
+# print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+# query = "What is the difference between pshycolgy and technology"
+# q_emb = rgp.query_embed(query=query)
+# # print(q_emb.shape)
 
-# Stage 6
-print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-response = rgp.lookup_and_retrieval(q_emb=q_emb.tolist(), top_k=3)
-# print(response)
+# # Stage 6
+# print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+# response = rgp.lookup_and_retrieval(q_emb=q_emb.tolist(), top_k=3)
+# # print(response)
 
-# Stage 7
-print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-more_context = rgp.web_search_needed(query=query, context=response)
-# print(more_context)
+# # Stage 7
+# print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+# more_context = rgp.web_search_needed(query=query, context=response)
+# # print(more_context)
 
 
-# Stage 8
-print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-generate_ans = rgp.generate_answer(query=query, context=more_context)
-print(generate_ans['answer'])
-print(generate_ans['references'])
+# # Stage 8
+# print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+# generate_ans = rgp.generate_answer(query=query, context=more_context)
+# print(generate_ans['answer'])
+# print(generate_ans['references'])
 
 
     

@@ -9,9 +9,10 @@ import pdfplumber
 import google.generativeai as genai
 from sentence_transformers import SentenceTransformer
 from backend.config import (
-    GENERATING_MODEL_NAME,
+    GEMINI_API_KEY,
     EMBEDDING_MODEL_NAME,
-    PINECONE_HOST_URL,
+    PINECONE_API_KEY,
+    SERP_API_KEY
 )
 from pinecone import Pinecone, ServerlessSpec
 
@@ -73,7 +74,6 @@ def load_embedding_model(model_name = 'all-MiniLM-L6-v2'):
     return model
 
 def load_pinecone():
-    PINECONE_API_KEY = os.getenv('PINECONE_API_KEY')
     pc = Pinecone(api_key=PINECONE_API_KEY)
 
     index_name = "dragggg"  
@@ -91,7 +91,7 @@ def load_pinecone():
    
 def load_generating_model():
     """Generating model instatination"""
-    genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
+    genai.configure(api_key=GEMINI_API_KEY)
     model = genai.GenerativeModel('gemini-2.0-flash')
     return model
 
@@ -135,7 +135,6 @@ Strictly respond in JSON format like this:
     }
 
 def perform_search(query):
-    SERP_API_KEY = os.getenv('SERP_API_KEY')
     client = serpapi.Client(api_key=SERP_API_KEY)
     result = client.search(
         q = query,

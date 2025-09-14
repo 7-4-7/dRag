@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
-from backend.routes import auth, drive
+from backend.routes import auth, drive, rag
 from backend.config import SECRET_KEY
 from fastapi.responses import FileResponse
 app = FastAPI()
@@ -27,6 +27,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(drive.router)
+app.include_router(rag.router)
 
 @app.get("/")
 def initial(request : Request):

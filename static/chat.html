@@ -6,6 +6,7 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; background: #000000; color: white; height: 100vh; display: flex; }
+
         .sidebar {
             width: 260px;
             background: #000000;
@@ -13,14 +14,16 @@
             padding: 20px;
             display: flex;
             flex-direction: column;
-            transition: transform 0.3s ease, width 0.3s ease;
             position: relative;
+            transition: transform 0.3s ease, width 0.3s ease;
         }
+
         .sidebar.collapsed {
             transform: translateX(-220px);
             width: 40px;
             padding: 20px 10px;
         }
+
         .collapse-btn {
             position: absolute;
             right: -15px;
@@ -39,11 +42,15 @@
             z-index: 10;
             transition: transform 0.3s ease;
         }
+
         .collapse-btn:hover { background: #333333; }
         .sidebar.collapsed .collapse-btn { transform: rotate(180deg); }
-        .sidebar-content { opacity: 1; transition: opacity 0.2s ease; }
+
+        .sidebar-content { opacity: 1; transition: opacity 0.2s ease; flex: 1; display: flex; flex-direction: column; }
         .sidebar.collapsed .sidebar-content { opacity: 0; pointer-events: none; }
+
         h2 { font-size: 22px; margin-bottom: 20px; }
+
         .toggle {
             display: flex;
             align-items: center;
@@ -51,6 +58,7 @@
             margin-bottom: 20px;
             cursor: pointer;
         }
+
         .switch {
             width: 36px;
             height: 18px;
@@ -59,7 +67,9 @@
             position: relative;
             transition: 0.3s;
         }
+
         .switch.on { background: #030a56; }
+
         .slider {
             width: 14px;
             height: 14px;
@@ -70,12 +80,15 @@
             left: 2px;
             transition: 0.3s;
         }
+
         .switch.on .slider { left: 20px; }
+
         .files {
             flex: 1;
             overflow-y: auto;
             margin-bottom: 20px;
         }
+
         .file {
             display: flex;
             align-items: center;
@@ -83,19 +96,23 @@
             padding: 6px 0;
             cursor: pointer;
         }
+
         .dot {
             width: 8px;
             height: 8px;
             border-radius: 2px;
             background: #ef4444;
         }
+
         .dot.green { background: #22c55e; }
+
         .filename {
             font-size: 13px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
+
         button {
             width: 100%;
             padding: 10px;
@@ -106,14 +123,24 @@
             cursor: pointer;
             font-size: 14px;
         }
+
         button:hover { background: #6502a8; }
+
+        .logout-btn {
+            background: #ef4444;
+            margin-top: auto;
+        }
+        .logout-btn:hover { background: #b91c1c; }
+
         .main { flex: 1; display: flex; flex-direction: column; }
+
         .chat {
             flex: 1;
             padding: 20px;
             overflow-y: auto;
             background: #000000;
         }
+
         .empty {
             height: 100%;
             display: flex;
@@ -122,6 +149,7 @@
             color: #c2c2c2;
             font-size: 16px;
         }
+
         .query {
             padding: 15px;
             background: #000000;
@@ -129,6 +157,7 @@
             display: flex;
             gap: 10px;
         }
+
         input {
             flex: 1;
             padding: 8px 12px;
@@ -138,10 +167,17 @@
             color: white;
             outline: none;
         }
+
         input::placeholder { color: #ffffff; }
+
         .send { width: 80px; }
-        .files::-webkit-scrollbar, .chat::-webkit-scrollbar { width: 4px; }
-        .files::-webkit-scrollbar-thumb, .chat::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+        .files::-webkit-scrollbar,
+        .chat::-webkit-scrollbar { width: 4px; }
+
+        .files::-webkit-scrollbar-thumb,
+        .chat::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
         .response {
             background: #000000;
             padding: 15px;
@@ -149,6 +185,7 @@
             margin-bottom: 10px;
             border: 1px solid white;
         }
+
         .web-badge {
             display: inline-block;
             background: #7c3aed;
@@ -167,9 +204,7 @@
             <h2>Knowledge Base</h2>
 
             <div class="toggle" onclick="toggleWeb()">
-                <div class="switch" id="webSwitch">
-                    <div class="slider"></div>
-                </div>
+                <div class="switch" id="webSwitch"><div class="slider"></div></div>
                 <span>Web Search</span>
             </div>
 
@@ -178,6 +213,9 @@
             </div>
 
             <button onclick="updateBase()">Update Base</button>
+
+            <!-- Logout button at bottom -->
+            <button class="logout-btn" onclick="logout()">Logout</button>
         </div>
     </div>
 
@@ -196,10 +234,11 @@
         let webSearch = false;
         let selectedFiles = new Set();
         let sidebarCollapsed = false;
+
         const allowedMimeTypes = [
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
-            'application/pdf', // .pdf
-            'application/vnd.openxmlformats-officedocument.presentationml.presentation' // .pptx
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/pdf',
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation'
         ];
 
         async function fetchFiles() {
@@ -209,7 +248,6 @@
                 const data = await res.json();
                 const driveFiles = data.files || [];
 
-                // Filter for allowed types only
                 const filtered = driveFiles.filter(file => allowedMimeTypes.includes(file.mimeType));
                 window.filteredFiles = filtered;
                 renderFiles();
@@ -248,33 +286,90 @@
             document.getElementById('sidebar').classList.toggle('collapsed', sidebarCollapsed);
         }
 
-        function updateBase() {
+        async function updateBase() {
             const chat = document.getElementById('chat');
-            chat.innerHTML = `<div class="response">
-                <strong>Base Updated!</strong><br><br>
-                Selected ${selectedFiles.size} files<br>
-                Web Search: ${webSearch ? 'ON' : 'OFF'}
-            </div>`;
+            const payload = {
+                file_ids: Array.from(selectedFiles),
+                web_search: webSearch
+            };
+
+            if (payload.file_ids.length === 0) {
+                chat.innerHTML = `<div class="response"><strong>Please select at least one file.</strong></div>`;
+                return;
+            }
+
+            try {
+                const res = await fetch('/drive/download_files', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await res.json();
+
+                chat.innerHTML += `<div class="response">
+                    <strong>Base Updated!</strong><br><br>
+                    Files downloaded: ${result.downloaded_files.join(', ') || 'None'}<br>
+                    Web Search: ${result.web_search_enabled ? 'ON' : 'OFF'}<br>
+                    ${result.errors.length ? `<br><strong>Errors:</strong><br>${result.errors.map(e => Object.values(e)).join('<br>')}` : ''}
+                </div>`;
+            } catch (err) {
+                console.error(err);
+                chat.innerHTML += `<div class="response"><strong>Error:</strong> ${err.message}</div>`;
+            }
         }
 
-        function ask() {
+        async function ask() {
             const input = document.getElementById('queryInput');
             const query = input.value.trim();
             if (!query) return;
 
             const chat = document.getElementById('chat');
+
             chat.innerHTML += `<div class="response">
                 ${webSearch ? '<div class="web-badge">WEB</div>' : ''}
                 <strong>Q:</strong> ${query}<br><br>
-                <strong>A:</strong> Based on ${selectedFiles.size} selected files${webSearch ? ' and web search' : ''}, 
-                here's the response to your question about "${query}".
+                <em>Loading answer...</em>
             </div>`;
+            chat.scrollTop = chat.scrollHeight;
+
+            try {
+                const res = await fetch('/rag/generate_answer', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: query, web_search: webSearch })
+                });
+
+                const data = await res.json();
+
+                chat.innerHTML += `<div class="response">
+                    ${webSearch ? '<div class="web-badge">WEB</div>' : ''}
+                    <strong>Q:</strong> ${query}<br><br>
+                    <strong>A:</strong> ${data.answer || "No answer"}<br>
+                    ${data.references?.length ? `<br><em>References:</em><br>${data.references.join('<br>')}` : ''}
+                </div>`;
+            } catch (err) {
+                chat.innerHTML += `<div class="response"><strong>Error:</strong> ${err.message}</div>`;
+            }
 
             input.value = '';
             chat.scrollTop = chat.scrollHeight;
         }
 
-        // Load files on start
+        async function logout() {
+            try {
+                const res = await fetch('/auth/logout');
+                if (res.redirected) {
+                    window.location.href = res.url;
+                } else {
+                    window.location.href = "/auth/login";
+                }
+            } catch (err) {
+                console.error("Logout error:", err);
+                alert("Logout failed.");
+            }
+        }
+
         fetchFiles();
     </script>
 </body>
