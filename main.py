@@ -5,13 +5,12 @@ from backend.config import SECRET_KEY
 
 app = FastAPI()
 
-# Updated session middleware with proper OAuth configuration
 app.add_middleware(
     SessionMiddleware, 
     secret_key=SECRET_KEY,
-    max_age=1800,  # 30 minutes
-    same_site='lax',  # Important for OAuth redirects
-    https_only=False  # Set to True in production with HTTPS
+    max_age=1800, 
+    same_site='lax', 
+    https_only=False 
 )
 
 app.include_router(auth.router)
@@ -21,7 +20,6 @@ app.include_router(auth.router)
 def health_check():
     return {'message': 'ALIVE !!!!'}
 
-# Optional: Test endpoint to verify sessions are working
 @app.get("/test-session")
 def test_session(request: Request):
     if 'test' not in request.session:

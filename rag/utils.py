@@ -88,8 +88,7 @@ def load_pinecone():
 
     index = pc.Index(index_name)
     return pc, index
-
-    
+   
 def load_generating_model():
     """Generating model instatination"""
     genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
