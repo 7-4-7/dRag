@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Drive Chat</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #000000; color: white; height: 100vh; display: flex; }
+        .sidebar {
+            width: 260px;
+            background: #000000;
+            border-right: 1px solid #ffffff;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease, width 0.3s ease;
+            position: relative;
+        }
+        .sidebar.collapsed {
+            transform: translateX(-220px);
+            width: 40px;
+            padding: 20px 10px;
+        }
+        .collapse-btn {
+            position: absolute;
+            right: -15px;
+            top: 20px;
+            width: 30px;
+            height: 30px;
+            background: #000000;
+            border: 1px solid #ffffff;
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            z-index: 10;
+            transition: transform 0.3s ease;
+        }
+        .collapse-btn:hover { background: #333333; }
+        .sidebar.collapsed .collapse-btn { transform: rotate(180deg); }
+        .sidebar-content { opacity: 1; transition: opacity 0.2s ease; }
+        .sidebar.collapsed .sidebar-content { opacity: 0; pointer-events: none; }
+        h2 { font-size: 22px; margin-bottom: 20px; }
+        .toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+        .switch {
+            width: 36px;
+            height: 18px;
+            background: #2b0053;
+            border-radius: 9px;
+            position: relative;
+            transition: 0.3s;
+        }
+        .switch.on { background: #030a56; }
+        .slider {
+            width: 14px;
+            height: 14px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            transition: 0.3s;
+        }
+        .switch.on .slider { left: 20px; }
+        .files {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+        .file {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 0;
+            cursor: pointer;
+        }
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 2px;
+            background: #ef4444;
+        }
+        .dot.green { background: #22c55e; }
+        .filename {
+            font-size: 13px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background: #950af1;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover { background: #6502a8; }
+        .main { flex: 1; display: flex; flex-direction: column; }
+        .chat {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #000000;
+        }
+        .empty {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #c2c2c2;
+            font-size: 16px;
+        }
+        .query {
+            padding: 15px;
+            background: #000000;
+            border-top: 1px solid #ffffff;
+            display: flex;
+            gap: 10px;
+        }
+        input {
+            flex: 1;
+            padding: 8px 12px;
+            background: #080101;
+            border: 5px;
+            border-radius: 4px;
+            color: white;
+            outline: none;
+        }
+        input::placeholder { color: #ffffff; }
+        .send { width: 80px; }
+        .files::-webkit-scrollbar, .chat::-webkit-scrollbar { width: 4px; }
+        .files::-webkit-scrollbar-thumb, .chat::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+        .response {
+            background: #000000;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            border: 1px solid white;
+        }
+        .web-badge {
+            display: inline-block;
+            background: #7c3aed;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            margin-bottom: 8px;
+            border: 1px solid white;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar" id="sidebar">
+        <div class="collapse-btn" onclick="toggleSidebar()">‹</div>
+        <div class="sidebar-content">
+            <h2>Knowledge Base</h2>
+
+            <div class="toggle" onclick="toggleWeb()">
+                <div class="switch" id="webSwitch">
+                    <div class="slider"></div>
+                </div>
+                <span>Web Search</span>
+            </div>
+
+            <div class="files" id="fileList">
+                <div class="file">Loading...</div>
+            </div>
+
+            <button onclick="updateBase()">Update Base</button>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="chat" id="chat">
+            <div class="empty">Ask questions about your files</div>
+        </div>
+
+        <div class="query">
+            <input id="queryInput" placeholder="Write your query here..." onkeydown="if(event.key==='Enter')ask()">
+            <button class="send" onclick="ask()">Ask</button>
+        </div>
+    </div>
+
+    <script>
+        let webSearch = false;
+        let selectedFiles = new Set();
+        let sidebarCollapsed = false;
+        const allowedMimeTypes = [
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+            'application/pdf', // .pdf
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation' // .pptx
+        ];
+
+        async function fetchFiles() {
+            try {
+                const res = await fetch('/drive/get_all_files');
+                if (!res.ok) throw new Error('Failed to fetch files');
+                const data = await res.json();
+                const driveFiles = data.files || [];
+
+                // Filter for allowed types only
+                const filtered = driveFiles.filter(file => allowedMimeTypes.includes(file.mimeType));
+                window.filteredFiles = filtered;
+                renderFiles();
+            } catch (err) {
+                console.error('Error fetching files:', err);
+                document.getElementById('fileList').innerHTML = '<div class="file">Failed to load files</div>';
+            }
+        }
+
+        function renderFiles() {
+            const fileList = document.getElementById('fileList');
+            fileList.innerHTML = window.filteredFiles.map(file => `
+                <div class="file" onclick="toggleFile('${file.id}')">
+                    <div class="dot ${selectedFiles.has(file.id) ? 'green' : ''}"></div>
+                    <div class="filename">${file.name}</div>
+                </div>
+            `).join('');
+        }
+
+        function toggleFile(id) {
+            if (selectedFiles.has(id)) {
+                selectedFiles.delete(id);
+            } else {
+                selectedFiles.add(id);
+            }
+            renderFiles();
+        }
+
+        function toggleWeb() {
+            webSearch = !webSearch;
+            document.getElementById('webSwitch').classList.toggle('on', webSearch);
+        }
+
+        function toggleSidebar() {
+            sidebarCollapsed = !sidebarCollapsed;
+            document.getElementById('sidebar').classList.toggle('collapsed', sidebarCollapsed);
+        }
+
+        function updateBase() {
+            const chat = document.getElementById('chat');
+            chat.innerHTML = `<div class="response">
+                <strong>Base Updated!</strong><br><br>
+                Selected ${selectedFiles.size} files<br>
+                Web Search: ${webSearch ? 'ON' : 'OFF'}
+            </div>`;
+        }
+
+        function ask() {
+            const input = document.getElementById('queryInput');
+            const query = input.value.trim();
+            if (!query) return;
+
+            const chat = document.getElementById('chat');
+            chat.innerHTML += `<div class="response">
+                ${webSearch ? '<div class="web-badge">WEB</div>' : ''}
+                <strong>Q:</strong> ${query}<br><br>
+                <strong>A:</strong> Based on ${selectedFiles.size} selected files${webSearch ? ' and web search' : ''}, 
+                here's the response to your question about "${query}".
+            </div>`;
+
+            input.value = '';
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        // Load files on start
+        fetchFiles();
+    </script>
+</body>
+</html>

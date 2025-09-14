@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>dRag</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: black;
+      color: white;
+      font-family: monospace;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    h1 {
+      font-size: 80px;
+      margin: 0 0 30px 0;
+      font-family: sans-serif;
+      font-weight: 400;
+    }
+
+    .info-box {
+      border: 1px solid white;
+      padding: 20px;
+      max-width: 600px;
+      margin-bottom: 40px;
+    }
+
+    .info-box p {
+      margin: 8px 0;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 20px;
+    }
+
+    button {
+      background: transparent;
+      border: 1px solid white;
+      color: white;
+      padding: 10px 25px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: rgb(255, 255, 255);
+      color: black;
+    }
+
+    .loading {
+      display: none;
+      margin-top: 20px;
+    }
+
+    .spinner {
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top: 3px solid white;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <h1>dRag</h1>
+
+  <div class="info-box">
+    <p>Performs rag on your drive files.</p>
+    <p>Supports .pdf, .pptx, .docx.</p>
+    <p>Supports OAuth Connection</p>
+    <p>Has web search integration.</p>
+    <p>Can perform citations, summarisation</p>
+  </div>
+
+  <div class="buttons">
+    <button onclick="oauthGoogle()">Login</button>
+    <button onclick="window.open('https://github.com/7-4-7', '_blank')">Github</button>
+    <button onclick="showDemo()">Demo</button>
+  </div>
+
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p>Redirecting to Google authentication...</p>
+  </div>
+
+  <script>
+    function oauthGoogle() {
+      document.getElementById('loading').style.display = 'block';
+    
+      const authEndpoint = 'http://localhost:8000/auth/login';
+      
+
+      window.location.href = authEndpoint;
+      
+      // Alternatively, you could open a popup instead of redirecting:
+      // window.open(authEndpoint, 'oauthPopup', 'width=600,height=600');
+    }
+
+    // Demo function
+    function showDemo() {
+      alert('Demo feature would be shown here.');
+      // You could implement a demo mode that uses sample data
+    }
+
+    // Check if we're returning from OAuth flow (based on URL parameters)
+    window.addEventListener('load', function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has('code') || urlParams.has('token')) {
+        // We have an auth code or token, exchange it for an access token
+        handleOAuthCallback();
+      }
+    });
+
+    function handleOAuthCallback() {
+      // This would process the OAuth response from the server
+      console.log('Handling OAuth callback');
+      // Extract code/token from URL and exchange with your backend
+    }
+  </script>
+</body>
+</html>
